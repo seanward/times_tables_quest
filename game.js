@@ -158,27 +158,65 @@
     };
   }
 
-  // Fill in any fields missing from profiles saved by older versions of the game.
+  // Coerce a value to a non-negative whole number, falling back when missing or invalid.
+  function toCount(value, fallback) {
+    const num = Number(value);
+    if (!Number.isFinite(num) || num < 0) return fallback;
+    return Math.floor(num);
+  }
+
+  // Fill in missing fields and sanitise values for profiles loaded from storage or
+  // imported from a save code (which is user-controlled text).
   function ensurePlayerShape(p) {
-    if (!p.counters) {
-      p.counters = {
-        practiceRounds: 0, perfectRounds: 0,
-        typingRounds: 0, perfectTypingRounds: 0,
-        totalCorrect: 0, totalAnswered: 0
-      };
-    }
-    if (typeof p.counters.typingRounds !== 'number') p.counters.typingRounds = 0;
-    if (typeof p.counters.perfectTypingRounds !== 'number') p.counters.perfectTypingRounds = 0;
-    if (typeof p.stars !== 'number') p.stars = 0;
-    if (typeof p.starsEarned !== 'number') p.starsEarned = p.stars;
-    if (typeof p.bestLightning !== 'number') p.bestLightning = 0;
-    if (!p.factWrong) p.factWrong = {};
-    if (!Array.isArray(p.badges)) p.badges = [];
-    if (!Array.isArray(p.treasures)) p.treasures = [];
-    if (!p.tableStats) p.tableStats = {};
-    allTables().forEach(t => {
-      if (!p.tableStats[t]) p.tableStats[t] = { rounds: 0, bestScore: 0, mastery: 0 };
+    if (typeof p.id !== 'string' || !p.id) p.id = 'p' + Date.now().toString(36) + randomInt(100, 999);
+    if (typeof p.name !== 'string' || !p.name.trim()) p.name = 'Explorer';
+    p.name = p.name.trim().slice(0, 16);
+
+    p.stars = toCount(p.stars, 0);
+    p.starsEarned = toCount(p.starsEarned, p.stars);
+    p.bestLightning = toCount(p.bestLightning, 0);
+
+    const counters = (p.counters && typeof p.counters === 'object') ? p.counters : {};
+    p.counters = {
+      practiceRounds: toCount(counters.practiceRounds, 0),
+      perfectRounds: toCount(counters.perfectRounds, 0),
+      typingRounds: toCount(counters.typingRounds, 0),
+      perfectTypingRounds: toCount(counters.perfectTypingRounds, 0),
+      totalCorrect: toCount(counters.totalCorrect, 0),
+      totalAnswered: toCount(counters.totalAnswered, 0)
+    };
+
+    const factWrong = (p.factWrong && typeof p.factWrong === 'object') ? p.factWrong : {};
+    p.factWrong = {};
+    Object.keys(factWrong).forEach(key => {
+      const count = toCount(factWrong[key], 0);
+      const match = key.match(/^(\d+)x(\d+)$/);
+      if (!match || count <= 0) return;
+      const a = parseInt(match[1], 10);
+      const b = parseInt(match[2], 10);
+      if (a >= 1 && a <= MAX_TABLE && b >= 1 && b <= MAX_TABLE) {
+        p.factWrong[key] = count;
+      }
     });
+
+    p.treasures = Array.isArray(p.treasures)
+      ? [...new Set(p.treasures.filter(id => SHOP_ITEMS.some(item => item.id === id)))]
+      : [];
+    p.badges = Array.isArray(p.badges)
+      ? [...new Set(p.badges.filter(id => BADGES.some(badge => badge.id === id)))]
+      : [];
+
+    const tableStats = (p.tableStats && typeof p.tableStats === 'object') ? p.tableStats : {};
+    p.tableStats = {};
+    allTables().forEach(t => {
+      const stats = (tableStats[t] && typeof tableStats[t] === 'object') ? tableStats[t] : {};
+      p.tableStats[t] = {
+        rounds: toCount(stats.rounds, 0),
+        bestScore: Math.min(toCount(stats.bestScore, 0), PRACTICE_QUESTIONS),
+        mastery: Math.min(toCount(stats.mastery, 0), MAX_MASTERY)
+      };
+    });
+
     return p;
   }
 
@@ -345,6 +383,9 @@
     const wrap = $('returning-players');
     const buttons = $('player-buttons');
     buttons.innerHTML = '';
+    $('import-code').value = '';
+    $('import-feedback').textContent = '';
+    $('import-feedback').className = 'transfer-feedback';
     if (save.players.length === 0) {
       wrap.classList.add('hidden');
     } else {
@@ -1231,6 +1272,11 @@
         </div>`;
       badgeGrid.appendChild(card);
     });
+
+    $('export-code').value = encodePlayerCode(player);
+    const exportFeedback = $('export-feedback');
+    exportFeedback.textContent = '';
+    exportFeedback.className = 'transfer-feedback';
   }
 
   /* ---------------- Star Shop ---------------- */
@@ -1380,6 +1426,107 @@
     });
   }
 
+  /* ---------------- save transfer (export / import) ---------------- */
+
+  const SAVE_CODE_PREFIX = 'TTQ1.';
+
+  // Unicode-safe base64 helpers (names may contain accents or emoji).
+  function toBase64Unicode(str) {
+    const utf8Binary = encodeURIComponent(str).replace(/%([0-9A-F]{2})/gi,
+      (match, hex) => String.fromCharCode(parseInt(hex, 16)));
+    return btoa(utf8Binary);
+  }
+
+  function fromBase64Unicode(b64) {
+    const binary = atob(b64);
+    let percentEncoded = '';
+    for (let i = 0; i < binary.length; i++) {
+      percentEncoded += '%' + binary.charCodeAt(i).toString(16).padStart(2, '0');
+    }
+    return decodeURIComponent(percentEncoded);
+  }
+
+  function encodePlayerCode(p) {
+    return SAVE_CODE_PREFIX + toBase64Unicode(JSON.stringify(p));
+  }
+
+  function decodePlayerCode(code) {
+    let trimmed = (code || '').trim();
+    if (!trimmed) throw new Error('Empty save code');
+    if (trimmed.startsWith(SAVE_CODE_PREFIX)) trimmed = trimmed.slice(SAVE_CODE_PREFIX.length);
+    trimmed = trimmed.replace(/\s+/g, '');
+    const parsed = JSON.parse(fromBase64Unicode(trimmed));
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.name !== 'string' || !parsed.name.trim()) {
+      throw new Error('Not a valid player save');
+    }
+    if (typeof parsed.id !== 'string' || !parsed.id) {
+      parsed.id = 'p' + Date.now().toString(36) + randomInt(100, 999);
+    }
+    return ensurePlayerShape(parsed);
+  }
+
+  function importSaveCode() {
+    const input = $('import-code');
+    const feedback = $('import-feedback');
+    feedback.className = 'transfer-feedback';
+    let imported;
+    try {
+      imported = decodePlayerCode(input.value);
+    } catch (err) {
+      console.warn('Could not import save code:', err);
+      sfx.wrong();
+      input.classList.remove('wobble');
+      void input.offsetWidth;
+      input.classList.add('wobble');
+      feedback.textContent = 'Hmm, that code does not look right. Make sure the whole code was copied.';
+      feedback.classList.add('oops');
+      return;
+    }
+    const existingIndex = save.players.findIndex(p => p.id === imported.id);
+    if (existingIndex >= 0) {
+      save.players[existingIndex] = imported;
+    } else {
+      save.players.push(imported);
+    }
+    persist();
+    input.value = '';
+    feedback.textContent = '';
+    sfx.fanfare();
+    selectPlayer(imported.id);
+    showToast(`Welcome back, ${imported.name}! Your save arrived safely with ⭐ ${imported.stars} stars.`, 4200);
+  }
+
+  function copySaveCode() {
+    const area = $('export-code');
+    const feedback = $('export-feedback');
+    const code = area.value;
+    feedback.className = 'transfer-feedback';
+    const onCopied = () => {
+      sfx.click();
+      feedback.textContent = 'Copied! Paste it into "Import a save code" on the other device.';
+      feedback.classList.add('good');
+    };
+    const fallback = () => {
+      try {
+        area.focus();
+        area.select();
+        if (document.execCommand && document.execCommand('copy')) {
+          onCopied();
+          return;
+        }
+      } catch (err) {
+        console.warn('Copy fallback failed:', err);
+      }
+      feedback.textContent = 'Select the code above and copy it (Ctrl+C, or long-press on a tablet).';
+      feedback.classList.add('good');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(onCopied, fallback);
+    } else {
+      fallback();
+    }
+  }
+
   /* ---------------- confetti ---------------- */
 
   const CONFETTI_COLORS = ['#ff7b54', '#2ec4b6', '#ffc145', '#b89ae0', '#f48fb1', '#58c977'];
@@ -1436,6 +1583,10 @@
     $('player-name').addEventListener('keydown', event => {
       if (event.key === 'Enter') startNewPlayer();
     });
+
+    // Save transfer
+    $('btn-import-save').addEventListener('click', importSaveCode);
+    $('btn-copy-save').addEventListener('click', copySaveCode);
 
     // Top bar
     $('btn-home').addEventListener('click', goHome);
