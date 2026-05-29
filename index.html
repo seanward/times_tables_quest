@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Times Tables Quest — with Sparky the Dragon</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⭐</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- Top bar: home, star balance, sound toggle -->
+    <header id="topbar" class="topbar hidden">
+      <button id="btn-home" class="icon-btn" aria-label="Go home">🏠</button>
+      <div class="star-chip" id="star-chip" title="Your stars">
+        <span class="star-icon">⭐</span>
+        <span id="star-count">0</span>
+      </div>
+      <button id="btn-sound" class="icon-btn" aria-label="Turn sound on or off">🔊</button>
+    </header>
+
+    <main id="screens">
+
+      <!-- Welcome / player select -->
+      <section id="screen-welcome" class="screen">
+        <div class="card welcome-card">
+          <img src="assets/mascot.png" alt="Sparky the dragon" class="mascot-big" />
+          <h1 class="game-title">Times Tables Quest</h1>
+          <p class="subtitle">Join <strong>Sparky the Dragon</strong> on a quest to the Castle of Times Tables.
+            Answer questions, earn stars, and spend them on treasures!</p>
+          <div id="returning-players" class="returning-players hidden">
+            <p class="small-label">Welcome back! Tap your name:</p>
+            <div id="player-buttons" class="player-buttons"></div>
+            <p class="small-label">…or make a new explorer below</p>
+          </div>
+          <div class="name-entry">
+            <input id="player-name" type="text" maxlength="16" placeholder="Type your name"
+                   autocomplete="off" spellcheck="false" />
+            <button id="btn-start" class="btn btn-primary btn-big">Let's play! 🚀</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Home menu -->
+      <section id="screen-home" class="screen hidden">
+        <div class="home-header">
+          <img id="home-mascot" src="assets/mascot.png" alt="Sparky" class="mascot-small float" />
+          <div class="speech-bubble">
+            <p id="home-greeting">Hi! Ready for an adventure?</p>
+            <p id="home-goal" class="home-goal"></p>
+          </div>
+        </div>
+        <div id="home-treasures" class="home-treasures"></div>
+        <div class="mode-grid">
+          <button class="mode-card mode-learn" id="btn-mode-learn">
+            <span class="mode-emoji">📖</span>
+            <span class="mode-name">Learn</span>
+            <span class="mode-desc">See how a times table works</span>
+          </button>
+          <button class="mode-card mode-practice" id="btn-mode-practice">
+            <span class="mode-emoji">🎯</span>
+            <span class="mode-name">Practice</span>
+            <span class="mode-desc">10 friendly questions</span>
+          </button>
+          <button class="mode-card mode-typing" id="btn-mode-typing">
+            <span class="mode-emoji">⌨️</span>
+            <span class="mode-name">Type It</span>
+            <span class="mode-desc">Type the answer yourself</span>
+          </button>
+          <button class="mode-card mode-lightning" id="btn-mode-lightning">
+            <span class="mode-emoji">⚡</span>
+            <span class="mode-name">Lightning</span>
+            <span class="mode-desc">Beat the clock!</span>
+          </button>
+          <button class="mode-card mode-dragon" id="btn-mode-dragon">
+            <span class="mode-emoji">🐉</span>
+            <span class="mode-name">Sparky's Den</span>
+            <span class="mode-desc">Watch Sparky grow!</span>
+          </button>
+          <button class="mode-card mode-badges" id="btn-mode-badges">
+            <span class="mode-emoji">🏆</span>
+            <span class="mode-name">My Quest</span>
+            <span class="mode-desc">Stars, badges and progress</span>
+          </button>
+          <button class="mode-card mode-shop" id="btn-mode-shop">
+            <span class="mode-emoji">🛍️</span>
+            <span class="mode-name">Star Shop</span>
+            <span class="mode-desc">Spend stars on treasures</span>
+          </button>
+        </div>
+        <button id="btn-switch-player" class="link-btn">Not you? Switch player</button>
+      </section>
+
+      <!-- Times table picker -->
+      <section id="screen-tables" class="screen hidden">
+        <h2 id="tables-title" class="screen-title">Choose a times table</h2>
+        <p id="tables-progress" class="quest-progress-label"></p>
+        <div class="progress-track quest-track">
+          <div id="tables-progress-bar" class="progress-fill quest-fill"></div>
+        </div>
+        <div id="table-grid" class="table-grid"></div>
+      </section>
+
+      <!-- Learn mode -->
+      <section id="screen-learn" class="screen hidden">
+        <h2 id="learn-title" class="screen-title">The 2 times table</h2>
+        <div class="card learn-card">
+          <p id="learn-fact" class="learn-fact">2 × 1 = 2</p>
+          <div id="learn-visual" class="learn-visual"></div>
+          <p id="learn-story" class="learn-story"></p>
+          <div class="learn-controls">
+            <button id="btn-learn-prev" class="btn btn-soft">◀ Back</button>
+            <button id="btn-learn-say" class="btn btn-soft">🔈 Say it</button>
+            <button id="btn-learn-next" class="btn btn-primary">Next ▶</button>
+          </div>
+        </div>
+        <div id="learn-dots" class="learn-dots"></div>
+        <button id="btn-learn-practice" class="btn btn-accent btn-big">I'm ready to practice! 🎯</button>
+      </section>
+
+      <!-- Practice mode -->
+      <section id="screen-practice" class="screen hidden">
+        <div class="quiz-top">
+          <p id="practice-progress-label" class="progress-label">Question 1 of 10</p>
+          <div class="progress-track">
+            <div id="practice-progress-bar" class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="quiz-question-row">
+          <img src="assets/mascot.png" alt="Sparky" class="mascot-small" />
+          <div class="speech-bubble">
+            <p id="practice-prompt">Here comes a question…</p>
+          </div>
+        </div>
+        <p id="practice-question" class="big-question" title="Tap to hear the question">7 × 8 = ?</p>
+        <div id="practice-answers" class="answer-grid"></div>
+        <p id="practice-feedback" class="feedback-line">&nbsp;</p>
+      </section>
+
+      <!-- Type It mode: keyboard-first, typed answers -->
+      <section id="screen-typing" class="screen hidden">
+        <div class="quiz-top">
+          <p id="typing-progress-label" class="progress-label">Question 1 of 10</p>
+          <div class="progress-track">
+            <div id="typing-progress-bar" class="progress-fill"></div>
+          </div>
+        </div>
+        <div class="quiz-question-row">
+          <img src="assets/mascot.png" alt="Sparky" class="mascot-small" />
+          <div class="speech-bubble">
+            <p id="typing-prompt">Type the answer, then press Enter!</p>
+          </div>
+        </div>
+        <p id="typing-question" class="big-question" title="Tap to hear the question">7 × 8 = ?</p>
+        <p id="typing-answer" class="typed-answer">&nbsp;</p>
+        <p id="typing-feedback" class="feedback-line">&nbsp;</p>
+        <p class="typing-hint">⌨️ Type the answer with your keyboard — <strong>Enter</strong> checks it,
+          <strong>Backspace</strong> fixes mistakes. You can tap the buttons too!</p>
+        <div id="keypad-typing" class="keypad"></div>
+      </section>
+
+      <!-- Lightning mode -->
+      <section id="screen-lightning" class="screen hidden">
+        <div class="lightning-top">
+          <div class="lightning-stat">⏰ <span id="lightning-time">60</span>s</div>
+          <div class="progress-track timer-track">
+            <div id="lightning-timer-bar" class="progress-fill timer-fill"></div>
+          </div>
+          <div class="lightning-stat">🎯 <span id="lightning-score">0</span></div>
+        </div>
+        <p id="lightning-question" class="big-question">6 × 7 = ?</p>
+        <p id="lightning-answer" class="typed-answer">&nbsp;</p>
+        <p id="lightning-feedback" class="feedback-line">&nbsp;</p>
+        <div id="keypad" class="keypad"></div>
+      </section>
+
+      <!-- Round results -->
+      <section id="screen-results" class="screen hidden">
+        <div class="card results-card">
+          <img id="results-mascot" src="assets/mascot_cheer.png" alt="Sparky celebrating" class="mascot-results" />
+          <h2 id="results-heading" class="results-heading">Amazing!</h2>
+          <p id="results-detail" class="results-detail"></p>
+          <div id="results-stars" class="results-stars"></div>
+          <p id="results-message" class="results-message"></p>
+          <div id="results-badges" class="results-badges"></div>
+          <div class="results-buttons">
+            <button id="btn-results-again" class="btn btn-primary">Play again 🔁</button>
+            <button id="btn-results-tables" class="btn btn-soft">Pick another table</button>
+            <button id="btn-results-home" class="btn btn-soft">Home 🏠</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- My Quest: progress, mastery stars and badges -->
+      <section id="screen-badges" class="screen hidden">
+        <h2 class="screen-title">My Quest</h2>
+        <div class="card badge-summary">
+          <img src="assets/trophy.png" alt="Trophy" class="trophy-img" />
+          <div class="badge-summary-text">
+            <p class="badge-total">⭐ <span id="badges-star-total">0</span> stars earned so far</p>
+            <p class="badge-sub" id="badges-best-lightning">Best Lightning score: 0</p>
+            <p class="badge-sub" id="badges-quest-label">Quest to the castle: 0 of 36 table stars</p>
+            <div class="progress-track quest-track">
+              <div id="badges-quest-bar" class="progress-fill quest-fill"></div>
+            </div>
+          </div>
+        </div>
+        <h3 class="section-title">Times table stars</h3>
+        <p class="section-hint">Score 8 or more in a Practice round to earn a table star. Three stars makes you a master!</p>
+        <div id="mastery-grid" class="mastery-grid"></div>
+        <h3 class="section-title">Prize badges</h3>
+        <div id="badge-grid" class="badge-grid"></div>
+      </section>
+
+      <!-- Star Shop -->
+      <section id="screen-shop" class="screen hidden">
+        <h2 class="screen-title">Sparky's Star Shop</h2>
+        <div class="card shop-balance-card">
+          <img id="shop-mascot" src="assets/mascot.png" alt="Sparky" class="mascot-small" />
+          <p class="shop-balance">You have <strong>⭐ <span id="shop-star-count">0</span></strong> stars to spend.
+            Every correct answer earns more stars — and every treasure you collect helps Sparky grow!</p>
+        </div>
+        <h3 class="section-title">My treasure collection</h3>
+        <div id="owned-treasures" class="owned-treasures"></div>
+        <h3 class="section-title">Treasures to earn</h3>
+        <div id="shop-grid" class="shop-grid"></div>
+      </section>
+
+      <!-- Sparky's Den: the character that grows as treasures are collected -->
+      <section id="screen-dragon" class="screen hidden">
+        <h2 class="screen-title">Sparky's Den</h2>
+        <div class="card dragon-card">
+          <img id="dragon-image" src="assets/mascot.png" alt="Sparky in his den" class="dragon-image" />
+          <h3 id="dragon-stage-name" class="dragon-stage-name">Little Sparky</h3>
+          <p id="dragon-stage-desc" class="dragon-stage-desc"></p>
+          <p id="dragon-progress-label" class="quest-progress-label"></p>
+          <div class="progress-track quest-track">
+            <div id="dragon-progress-bar" class="progress-fill quest-fill"></div>
+          </div>
+          <p id="dragon-next-hint" class="dragon-next-hint"></p>
+        </div>
+        <h3 class="section-title">Treasures in the den</h3>
+        <div id="dragon-treasures" class="owned-treasures"></div>
+        <div class="dragon-buttons">
+          <button id="btn-dragon-play" class="btn btn-primary">Earn more stars 🎯</button>
+          <button id="btn-dragon-shop" class="btn btn-accent">Spend stars on treasures 🛍️</button>
+        </div>
+        <h3 class="section-title">How Sparky grows</h3>
+        <div id="dragon-stages-row" class="dragon-stages-row"></div>
+      </section>
+
+    </main>
+
+    <div id="confetti-layer" aria-hidden="true"></div>
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
