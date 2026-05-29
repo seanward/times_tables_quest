@@ -264,15 +264,84 @@ function scenarioSavedProfiles() {
   return window;
 }
 
+/* ------------------------------------------------------------
+   Scenario 3: exporting a save code and importing it into a
+   fresh installation (different origin / device).
+   ------------------------------------------------------------ */
+function scenarioSaveTransfer() {
+  console.log('\nScenario 3: save export / import between installations');
+  const seed = {
+    soundOn: true,
+    lastPlayerId: 'pX',
+    players: [{
+      id: 'pX',
+      name: 'Mover',
+      stars: 42,
+      starsEarned: 142,
+      treasures: ['chick', 'butterfly', 'turtle', 'rainbow', 'kitten', 'puppy'],
+      badges: ['first-steps'],
+      bestLightning: 9,
+      factWrong: {},
+      tableStats: {},
+      counters: { practiceRounds: 3, perfectRounds: 1, typingRounds: 2, perfectTypingRounds: 1, totalCorrect: 40, totalAnswered: 50 }
+    }]
+  };
+
+  // Source installation: open My Quest and read the export code.
+  const source = bootGame(seed);
+  [...source.document.querySelectorAll('#player-buttons .player-pill')][0].click();
+  $(source, 'btn-mode-badges').click();
+  const code = $(source, 'export-code').value;
+  check(code.startsWith('TTQ1.'), 'export code is generated with the TTQ1 prefix');
+  check(code.length > 50, 'export code looks substantial');
+  $(source, 'btn-copy-save').click();
+  check($(source, 'export-feedback').textContent.length > 0, 'copy button reports feedback');
+
+  // Destination installation: a brand new browser with no saves.
+  const dest = bootGame(null);
+  check(visible(dest, 'screen-welcome'), 'destination starts on the welcome screen');
+
+  // An invalid code is rejected politely.
+  $(dest, 'import-code').value = 'this is not a save code';
+  $(dest, 'btn-import-save').click();
+  check(visible(dest, 'screen-welcome'), 'invalid code keeps the welcome screen open');
+  check($(dest, 'import-feedback').textContent.includes('does not look right'),
+    'invalid code shows a friendly error');
+
+  // The real code imports the profile and loads it.
+  $(dest, 'import-code').value = code;
+  $(dest, 'btn-import-save').click();
+  check(visible(dest, 'screen-home'), 'importing the save opens the home screen');
+  check($(dest, 'star-count').textContent === '42', 'imported profile keeps its star balance');
+  check($(dest, 'home-mascot').getAttribute('src') === 'assets/sparky_stage3.png',
+    'imported profile keeps Sparky at the Explorer stage (6 treasures)');
+  check($(dest, 'toast').textContent.includes('Mover'), 'import toast greets the player by name');
+  $(dest, 'btn-mode-dragon').click();
+  check($(dest, 'dragon-progress-label').textContent.includes('6 of 17'),
+    'imported treasures appear in Sparky\'s den');
+
+  // Importing the same code again replaces the profile instead of duplicating it.
+  $(dest, 'btn-home').click();
+  $(dest, 'btn-switch-player').click();
+  $(dest, 'import-code').value = code;
+  $(dest, 'btn-import-save').click();
+  $(dest, 'btn-switch-player').click();
+  const pills = [...dest.document.querySelectorAll('#player-buttons .player-pill')];
+  check(pills.length === 1, 're-importing the same save does not duplicate the profile');
+
+  return dest;
+}
+
 /* ------------------------------------------------------------ */
 
 try {
   scenarioNewPlayer();
   scenarioSavedProfiles();
+  scenarioSaveTransfer();
 } catch (err) {
   failed += 1;
   console.error('\nUnexpected error during tests:', err);
 }
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);
-process.exit(failed === 0 ? 0 : 1);
+process.exitCode = failed === 0 ? 0 : 1;

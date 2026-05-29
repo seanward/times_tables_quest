@@ -42,6 +42,13 @@
                    autocomplete="off" spellcheck="false" />
             <button id="btn-start" class="btn btn-primary btn-big">Let's play! 🚀</button>
           </div>
+          <details class="import-box">
+            <summary>Moving from another device? Import a save code 📥</summary>
+            <p class="small-label">Paste the save code you copied from <strong>My Quest → Transfer my save</strong> on the other device.</p>
+            <textarea id="import-code" rows="3" placeholder="Paste your save code here" spellcheck="false"></textarea>
+            <button id="btn-import-save" class="btn btn-soft">Import save 📥</button>
+            <p id="import-feedback" class="transfer-feedback"></p>
+          </details>
         </div>
       </section>
 
@@ -214,6 +221,17 @@
         <div id="mastery-grid" class="mastery-grid"></div>
         <h3 class="section-title">Prize badges</h3>
         <div id="badge-grid" class="badge-grid"></div>
+        <h3 class="section-title">Transfer my save</h3>
+        <div class="card export-card">
+          <p class="export-hint">Want to play on another device or website? Copy this save code, open the game there,
+            and choose <strong>"Import a save code"</strong> on the first screen. It carries your stars, treasures,
+            badges and Sparky's progress.</p>
+          <textarea id="export-code" class="export-code" rows="4" readonly spellcheck="false"></textarea>
+          <div class="export-buttons">
+            <button id="btn-copy-save" class="btn btn-primary">Copy my save code 📋</button>
+          </div>
+          <p id="export-feedback" class="transfer-feedback"></p>
+        </div>
       </section>
 
       <!-- Star Shop -->

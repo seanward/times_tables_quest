@@ -982,6 +982,58 @@ input {
   margin-top: 4px;
 }
 
+/* ---------- Save transfer (export / import) ---------- */
+
+.import-box {
+  margin-top: 18px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+}
+
+.import-box summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+}
+
+.import-box textarea,
+.export-code {
+  width: 100%;
+  border: 3px solid #eadfd2;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: var(--ink);
+  background: #fff;
+  resize: vertical;
+  margin: 10px 0;
+  box-sizing: border-box;
+}
+
+.import-box textarea:focus,
+.export-code:focus { outline: none; border-color: var(--teal); }
+
+.import-box textarea.wobble { animation: wobble 0.4s ease; border-color: var(--red-no); }
+
+.export-card { margin-bottom: 8px; }
+
+.export-hint { color: var(--ink-soft); font-weight: 600; margin: 0 0 6px; }
+
+.export-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.transfer-feedback {
+  font-weight: 700;
+  min-height: 1.4rem;
+  margin: 8px 0 0;
+}
+
+.transfer-feedback.good { color: #2e8b4f; }
+.transfer-feedback.oops { color: #c0392b; }
+
 /* ---------- Toast ---------- */
 
 .toast {
